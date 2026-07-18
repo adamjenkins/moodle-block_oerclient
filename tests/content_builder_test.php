@@ -16,8 +16,6 @@
 
 namespace block_oerclient\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Tests for content_builder::get_recent_shares() — the pure-DB panel-1
  * data source. The panel-2 web service call is deliberately not unit

@@ -16,8 +16,6 @@
 
 namespace block_oerclient\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Pure-DB data for the "What I've shared" panel — no network calls, so this
  * is what gets unit-tested (unlike the Exchange web service call for the

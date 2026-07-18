@@ -32,6 +32,7 @@ $string['nosharesyet'] = 'Nothing has been shared to the Exchange from this site
 $string['oerclient:addinstance'] = 'Add a new OER Exchange block';
 $string['oerclient:myaddinstance'] = 'Add a new OER Exchange block to the Dashboard';
 $string['pluginname'] = 'OER Exchange';
+$string['privacy:metadata'] = 'The OER Exchange block only displays shares already stored by local_oerclient and public resources from the connected Exchange; it does not store any data of its own.';
 $string['recentpaneltitle'] = 'Recent OER available';
 $string['sharespaneltitle'] = 'What I\'ve shared';
 $string['status_backingup'] = 'Building backup';
