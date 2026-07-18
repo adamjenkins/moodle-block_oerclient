@@ -26,7 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['browsemore'] = 'もっと見る...';
 $string['error_exchangeunreachable'] = '現在、Exchangeに接続できません。しばらくしてから再度お試しください。';
-$string['error_notregistered'] = 'このサイトはまだOER Exchangeに登録されていない(または承認されていない)ため利用できません。サイト管理者に「サイト管理 > プラグイン > ローカルプラグイン > OER Client」を確認するよう依頼してください。';
+$string['error_notregistered'] = 'このサイトはまだOER Exchangeに登録されていない(または承認されていない)ため利用できません。サイト管理者に「サイト管理 > プラグイン > OER Client > 全般設定」を確認するよう依頼してください。';
 $string['nocatalogresources'] = 'Exchangeにはまだ公開されているリソースがありません。';
 $string['nosharesyet'] = 'このサイトからExchangeへ共有されたものはまだありません。';
 $string['oerclient:addinstance'] = '新しいOER Exchangeブロックを追加する';
