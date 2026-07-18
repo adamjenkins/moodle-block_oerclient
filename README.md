@@ -36,6 +36,9 @@ error.
    Moodle installation.
 3. Visit Site administration > Notifications to complete the install.
 4. Add the "OER Exchange" block to your Dashboard from the block drawer.
+   Moodle always adds a new block to the side panel first — drag it into
+   the main content column (below Course overview/Timeline) for better
+   visibility; this is a one-time step per Dashboard.
 
 ## License
 
