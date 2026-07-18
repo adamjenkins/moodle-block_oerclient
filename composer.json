@@ -1,0 +1,21 @@
+{
+    "name": "adamjenkins/moodle-block_oerclient",
+    "description": "Dashboard block for the OER Exchange platform: what this site has shared, and recent resources available on the Exchange.",
+    "type": "moodle-block",
+    "license": "GPL-3.0-or-later",
+    "authors": [
+        {
+            "name": "Adam Jenkins",
+            "email": "adam@wisecat.net"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/adamjenkins/moodle-block_oerclient/issues",
+        "source": "https://github.com/adamjenkins/moodle-block_oerclient"
+    },
+    "require": {
+        "moodle/moodle": ">=5.0 <5.3",
+        "moodle/composer-installer": "^1.0",
+        "adamjenkins/moodle-local_oerclient": "*"
+    }
+}
