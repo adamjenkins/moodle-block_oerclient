@@ -199,6 +199,14 @@ class block_oerclient extends block_base {
             $url = new moodle_url('/local/oerclient/resource_preview.php', ['id' => $r['id']]);
             $out .= html_writer::start_tag('li', ['class' => 'mb-2']);
             $out .= html_writer::link($url, s($r['title']), ['class' => 'fw-bold']);
+            if (!empty($r['creatorname'])) {
+                $creatorlabel = s($r['creatorname']);
+                if (!empty($r['creatorprofileurl'])) {
+                    $creatorlabel = html_writer::link($r['creatorprofileurl'], $creatorlabel);
+                }
+                $createdby = get_string('createdby', 'block_oerclient', $creatorlabel);
+                $out .= html_writer::tag('div', $createdby, ['class' => 'small text-muted']);
+            }
             $out .= html_writer::tag('div', s($r['licenseshortname']), ['class' => 'small text-muted']);
             $out .= html_writer::end_tag('li');
         }
