@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+namespace block_oerclient;
+
 /**
  * Tests for block_oerclient::render_shares_panel() — specifically the
  * capability gate that decides whether a share's title links to
@@ -26,8 +28,8 @@
  * @package    block_oerclient
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \block_oerclient
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(\block_oerclient::class)]
 final class block_oerclient_test extends \advanced_testcase {
     public static function setUpBeforeClass(): void {
         require_once(__DIR__ . '/../../moodleblock.class.php');
@@ -70,7 +72,6 @@ final class block_oerclient_test extends \advanced_testcase {
     protected function render_shares_panel(): string {
         $block = new \block_oerclient();
         $method = new \ReflectionMethod($block, 'render_shares_panel');
-        $method->setAccessible(true);
         return $method->invoke($block);
     }
 
@@ -114,5 +115,38 @@ final class block_oerclient_test extends \advanced_testcase {
         $html = $this->render_shares_panel();
 
         $this->assertStringContainsString('share_status.php', $html);
+    }
+
+    /**
+     * Share titles are other users' free text shown on every Dashboard —
+     * the s() on them is the panel's load-bearing XSS sink.
+     */
+    public function test_share_titles_are_escaped(): void {
+        $this->resetAfterTest();
+
+        $owner = $this->getDataGenerator()->create_user();
+        $this->insert_share(['userid' => $owner->id, 'title' => '<script>alert(1)</script>Evil']);
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $html = $this->render_shares_panel();
+
+        $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
+        $this->assertStringContainsString('&lt;script&gt;', $html);
+    }
+
+    /**
+     * A status value this block doesn't know renders escaped, not as
+     * markup.
+     */
+    public function test_unknown_status_falls_back_escaped(): void {
+        $this->resetAfterTest();
+
+        $owner = $this->getDataGenerator()->create_user();
+        $this->insert_share(['userid' => $owner->id, 'status' => '<b>odd</b>']);
+        $this->setUser($owner);
+
+        $html = $this->render_shares_panel();
+
+        $this->assertStringNotContainsString('<b>odd</b>', $html);
     }
 }

@@ -24,8 +24,8 @@ namespace block_oerclient\local;
  * @package    block_oerclient
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers     \block_oerclient\local\content_builder
  */
+#[\PHPUnit\Framework\Attributes\CoversClass(content_builder::class)]
 final class content_builder_test extends \advanced_testcase {
     /**
      * Inserts a local_oerclient_shares row with sensible defaults, letting

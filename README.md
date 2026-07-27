@@ -8,7 +8,7 @@ dedicated page first.
 
 ## What it shows
 
-- **What I've shared** — the site's own outgoing shares to the Exchange
+- **Shared from this site** — the site's own outgoing shares to the Exchange
   (course or activity), with their status (queued, building a backup,
   uploading, published, or failed). Read directly from the local database —
   no network call.

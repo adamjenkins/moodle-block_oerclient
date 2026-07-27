@@ -101,9 +101,14 @@ class block_oerclient extends block_base {
     protected function render_shares_panel(): string {
         global $DB, $USER;
 
-        $shares = content_builder::get_recent_shares(self::SHARES_LIMIT);
+        // The userid is ignored while the site-wide default scope is in
+        // force, but passing it makes content_builder's documented
+        // "flip one constant" toggle actually work — without it the
+        // per-user branch could never match.
+        $shares = content_builder::get_recent_shares(self::SHARES_LIMIT, (int) $USER->id);
 
-        $out = html_writer::tag('h5', get_string('sharespaneltitle', 'block_oerclient'));
+        // The block title is an h5 in Boost, so panels nest below it.
+        $out = html_writer::tag('h6', get_string('sharespaneltitle', 'block_oerclient'));
 
         if (empty($shares)) {
             return $out . html_writer::tag('p', get_string('nosharesyet', 'block_oerclient'), ['class' => 'text-muted']);
@@ -111,17 +116,18 @@ class block_oerclient extends block_base {
 
         $courseids = array_unique(array_map(fn($share) => (int) $share->courseid, $shares));
         $courses = $DB->get_records_list('course', 'id', $courseids, '', 'id, fullname');
+        $isadmin = has_capability('moodle/site:config', context_system::instance());
 
         $out .= html_writer::start_tag('ul', ['class' => 'list-unstyled mb-0']);
         foreach ($shares as $share) {
             $statuslabel = $this->status_label($share->status);
             $coursename = isset($courses[$share->courseid])
-                ? format_string($courses[$share->courseid]->fullname)
+                ? format_string($courses[$share->courseid]->fullname, true, ['context' => context_system::instance()])
                 : get_string('unknowncourse', 'block_oerclient');
 
             $title = s($share->title);
             $isowner = (int) $share->userid === (int) $USER->id;
-            $canlink = $isowner || has_capability('moodle/site:config', context_system::instance());
+            $canlink = $isowner || $isadmin;
             if ($canlink) {
                 $url = new moodle_url('/local/oerclient/share_status.php', ['id' => $share->id]);
                 $titlehtml = html_writer::link($url, $title);
@@ -169,7 +175,7 @@ class block_oerclient extends block_base {
      * @return string
      */
     protected function render_recent_panel(): string {
-        $out = html_writer::tag('h5', get_string('recentpaneltitle', 'block_oerclient'), ['class' => 'mt-3']);
+        $out = html_writer::tag('h6', get_string('recentpaneltitle', 'block_oerclient'), ['class' => 'mt-3']);
 
         $exchangeurl = get_config('local_oerclient', 'exchangeurl');
         $sitetoken = get_config('local_oerclient', 'sitetoken');
@@ -178,36 +184,63 @@ class block_oerclient extends block_base {
             return $out . html_writer::tag('p', get_string('error_notregistered', 'block_oerclient'), ['class' => 'text-muted']);
         }
 
-        try {
-            $client = new exchange_client($exchangeurl);
-            $result = $client->call('local_oerexchange_search', [
-                'query' => '', 'type' => '', 'page' => 0, 'perpage' => self::RECENT_PERPAGE,
-            ], $sitetoken);
-        } catch (\Throwable $e) {
-            // A Dashboard block failing loudly would be much worse than one
-            // panel showing a helpful empty state — never let this bubble up.
+        // One Exchange round-trip per five minutes, not one per Dashboard
+        // pageview per user — and a DOWN Exchange costs one timeout per
+        // five minutes rather than hanging every user's landing page. The
+        // failure state is cached under the same TTL for the same reason.
+        $cache = \cache::make('block_oerclient', 'recentoer');
+        $state = $cache->get('state');
+        if ($state === false) {
+            try {
+                $client = new exchange_client($exchangeurl);
+                $result = $client->call('local_oerexchange_search', [
+                    'query' => '', 'type' => '', 'page' => 0, 'perpage' => self::RECENT_PERPAGE,
+                ], $sitetoken);
+                $state = ['failed' => false, 'results' => $result['results'] ?? []];
+            } catch (\Throwable $e) {
+                // A Dashboard block failing loudly would be much worse than
+                // one panel showing a helpful empty state — never let this
+                // bubble up.
+                $state = ['failed' => true, 'results' => []];
+            }
+            $cache->set('state', $state);
+        }
+
+        if (!empty($state['failed'])) {
             $message = get_string('error_exchangeunreachable', 'block_oerclient');
             return $out . html_writer::tag('p', $message, ['class' => 'text-muted']);
         }
 
-        if (empty($result['results'])) {
+        if (empty($state['results'])) {
             return $out . html_writer::tag('p', get_string('nocatalogresources', 'block_oerclient'), ['class' => 'text-muted']);
         }
 
         $out .= html_writer::start_tag('ul', ['class' => 'list-unstyled mb-0']);
-        foreach ($result['results'] as $r) {
-            $url = new moodle_url('/local/oerclient/resource_preview.php', ['id' => $r['id']]);
+        foreach ($state['results'] as $r) {
+            // Defensive extraction: this array came over the network from
+            // the Exchange. A malformed response must degrade, not take the
+            // Dashboard down with undefined-key warnings after the cache/
+            // call block above has already succeeded.
+            $rid = (int) ($r['id'] ?? 0);
+            if ($rid <= 0) {
+                continue;
+            }
+            $url = new moodle_url('/local/oerclient/resource_preview.php', ['id' => $rid]);
             $out .= html_writer::start_tag('li', ['class' => 'mb-2']);
-            $out .= html_writer::link($url, s($r['title']), ['class' => 'fw-bold']);
+            $out .= html_writer::link($url, s((string) ($r['title'] ?? '')), ['class' => 'fw-bold']);
             if (!empty($r['creatorname'])) {
-                $creatorlabel = s($r['creatorname']);
-                if (!empty($r['creatorprofileurl'])) {
-                    $creatorlabel = html_writer::link($r['creatorprofileurl'], $creatorlabel);
+                $creatorlabel = s((string) $r['creatorname']);
+                // PARAM_URL rejects javascript:/data: and other non-web
+                // schemes — html_writer only attribute-escapes, so without
+                // this a malicious Exchange could plant a scriptable href.
+                $profileurl = clean_param((string) ($r['creatorprofileurl'] ?? ''), PARAM_URL);
+                if ($profileurl !== '') {
+                    $creatorlabel = html_writer::link($profileurl, $creatorlabel);
                 }
                 $createdby = get_string('createdby', 'block_oerclient', $creatorlabel);
                 $out .= html_writer::tag('div', $createdby, ['class' => 'small text-muted']);
             }
-            $out .= html_writer::tag('div', s($r['licenseshortname']), ['class' => 'small text-muted']);
+            $out .= html_writer::tag('div', s((string) ($r['licenseshortname'] ?? '')), ['class' => 'small text-muted']);
             $out .= html_writer::end_tag('li');
         }
         $out .= html_writer::end_tag('ul');

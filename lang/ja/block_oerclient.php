@@ -25,8 +25,10 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['browsemore'] = 'もっと見る...';
+$string['cachedef_recentoer'] = '接続されたExchangeで利用可能な最新のOER（5分間のスナップショット）';
+$string['createdby'] = '作成者: {$a}';
 $string['error_exchangeunreachable'] = '現在、Exchangeに接続できません。しばらくしてから再度お試しください。';
-$string['error_notregistered'] = 'このサイトはまだOER Exchangeに登録されていない(または承認されていない)ため利用できません。サイト管理者に「サイト管理 > プラグイン > OER Client > 全般設定」を確認するよう依頼してください。';
+$string['error_notregistered'] = 'このサイトはまだOER Exchangeに登録されていない(または承認されていない)ため利用できません。サイト管理者に「サイト管理 > プラグイン > ローカルプラグイン > OER Client > 全般設定」を確認するよう依頼してください。';
 $string['nocatalogresources'] = 'Exchangeにはまだ公開されているリソースがありません。';
 $string['nosharesyet'] = 'このサイトからExchangeへ共有されたものはまだありません。';
 $string['oerclient:addinstance'] = '新しいOER Exchangeブロックを追加する';
@@ -34,7 +36,7 @@ $string['oerclient:myaddinstance'] = 'ダッシュボードに新しいOER Excha
 $string['pluginname'] = 'OER Exchange';
 $string['privacy:metadata'] = 'OER Exchangeブロックは、local_oerclientによってすでに保存されている共有情報と、接続されたExchangeの公開リソースを表示するだけであり、独自のデータは保存しません。';
 $string['recentpaneltitle'] = '利用可能な最新のOER';
-$string['sharespaneltitle'] = '自分が共有したもの';
+$string['sharespaneltitle'] = 'このサイトから共有されたもの';
 $string['status_backingup'] = 'バックアップを作成中';
 $string['status_failed'] = '失敗';
 $string['status_pending'] = '待機中';
