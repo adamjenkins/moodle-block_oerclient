@@ -9,6 +9,6 @@ Feature: Add the OER Exchange block to the Dashboard
     And I visit "/my/"
     And I turn editing mode on
     When I add the "OER Exchange" block
-    Then I should see "What I've shared" in the "OER Exchange" "block"
+    Then I should see "Shared from this site" in the "OER Exchange" "block"
     And I should see "Nothing has been shared to the Exchange from this site yet." in the "OER Exchange" "block"
     And I should see "Recent OER available" in the "OER Exchange" "block"

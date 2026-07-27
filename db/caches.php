@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capability definitions for block_oerclient.
+ * Cache definitions for block_oerclient.
  *
  * @package    block_oerclient
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
@@ -24,25 +24,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$capabilities = [
-    'block/oerclient:myaddinstance' => [
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'user' => CAP_ALLOW,
-        ],
-        'clonepermissionsfrom' => 'moodle/my:manageblocks',
-    ],
-
-    'block/oerclient:addinstance' => [
-        // No riskbitmask: the block has no instance config and renders no
-        // user-authored HTML, so adding it exposes neither XSS nor spam.
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_BLOCK,
-        'archetypes' => [
-            'editingteacher' => CAP_ALLOW,
-            'manager' => CAP_ALLOW,
-        ],
-        'clonepermissionsfrom' => 'moodle/site:manageblocks',
+$definitions = [
+    // The "Recent OER available" panel's Exchange search response. The
+    // catalogue is site-wide (not per-user), so one application-level entry
+    // serves every Dashboard; the 5-minute TTL bounds both the staleness of
+    // the panel and how often a down Exchange can cost anyone a timeout.
+    'recentoer' => [
+        'mode' => cache_store::MODE_APPLICATION,
+        'ttl' => 300,
+        'simplekeys' => true,
+        'simpledata' => true,
     ],
 ];

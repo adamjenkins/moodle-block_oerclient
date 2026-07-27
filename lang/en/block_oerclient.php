@@ -25,6 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['browsemore'] = 'Browse more...';
+$string['cachedef_recentoer'] = 'Recent OER available on the connected Exchange (five-minute snapshot)';
 $string['createdby'] = 'Created by {$a}';
 $string['error_exchangeunreachable'] = 'Could not reach the Exchange right now. Try again later.';
 $string['error_notregistered'] = 'This site is not yet registered (or not yet approved) with an OER Exchange. Ask a site administrator to check Site administration > Plugins > OER Client > General settings.';
@@ -35,7 +36,7 @@ $string['oerclient:myaddinstance'] = 'Add a new OER Exchange block to the Dashbo
 $string['pluginname'] = 'OER Exchange';
 $string['privacy:metadata'] = 'The OER Exchange block only displays shares already stored by local_oerclient and public resources from the connected Exchange; it does not store any data of its own.';
 $string['recentpaneltitle'] = 'Recent OER available';
-$string['sharespaneltitle'] = 'What I\'ve shared';
+$string['sharespaneltitle'] = 'Shared from this site';
 $string['status_backingup'] = 'Building backup';
 $string['status_failed'] = 'Failed';
 $string['status_pending'] = 'Queued';

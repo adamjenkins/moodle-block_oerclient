@@ -25,10 +25,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_oerclient';
-$plugin->version   = 2026071900;
-$plugin->requires  = 2024100700; // Moodle 5.0 — matches local_oerclient's own requirement.
+$plugin->version   = 2026072700;
+// 2025041400 = the Moodle 5.0 branching version — matches $supported's floor
+// and composer.json. The previous value (2024100700) was Moodle 4.5 while
+// its comment claimed 5.0; 4.5 sites could install a block never tested
+// there (and styled with Bootstrap 5 classes 4.5 themes lack).
+$plugin->requires  = 2025041400;
 $plugin->supported = [500, 502];
-$plugin->release   = '0.1.0';
+$plugin->release   = '0.1.1';
 $plugin->maturity  = MATURITY_ALPHA;
 
 // Moodle's real enforcement mechanism for "this block needs its parent
