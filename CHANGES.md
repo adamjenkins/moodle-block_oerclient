@@ -1,12 +1,17 @@
-# Release notes — 0.1.1
+# Release notes — 1.0.0
 
-Review-round hardening, plus the creator-attribution line that shipped in
-code on 2026-07-20 but was never released. The "Recent OER available"
-panel's Exchange search is now cached for five minutes (one network
-round-trip per site, not one per Dashboard view — and a down Exchange costs
-one timeout per five minutes instead of hanging every landing page).
-Remote-supplied data is treated as untrusted end to end: creator profile
-URLs pass a scheme whitelist before becoming links, and a malformed search
-response degrades instead of breaking the Dashboard. The first panel is
-retitled "Shared from this site" to say what it actually lists, and the
-installation floor is corrected to Moodle 5.0.
+The first stable release. The block is declared `MATURITY_STABLE`: both
+panels, the cached Exchange search behind the second one, and the degradation
+paths for an unregistered or unreachable Exchange have been exercised against
+a real two-site deployment.
+
+One change lands with it. **The "Recent OER available" panel shows cover
+images**: each row now leads with the resource's cover-image thumbnail, with a
+neutral panel of the same size where a resource has no cover, so rows stay
+aligned. The thumbnail sits inside the same link as the title but is hidden
+from assistive technology, widening the click target without announcing the
+same destination twice.
+
+The thumbnail URL arrives over the network from the Exchange, so it passes
+`clean_param(..., PARAM_URL)` before rendering — the same treatment the
+creator-profile URL already gets.

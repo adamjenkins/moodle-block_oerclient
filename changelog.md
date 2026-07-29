@@ -3,6 +3,28 @@
 All notable changes to this project are documented in this file, in
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [1.0.0] - 2026-07-29
+
+First stable release. `$plugin->maturity` is now `MATURITY_STABLE`.
+
+### Added
+
+- Cover-image thumbnails on the "Recent OER available" panel, via
+  `local_oerclient\local\cover_image::listitem()`, with a neutral panel of the
+  same size where a resource has no cover so rows stay aligned.
+
+### Changed
+
+- Rows are laid out thumbnail-left, text-right. The thumbnail is inside the
+  same link as the title but `aria-hidden`, so it widens the click target
+  without announcing the same destination twice.
+
+### Security
+
+- The `coverimageurl` returned by the Exchange's search service is passed
+  through `clean_param(..., PARAM_URL)` before rendering, as the
+  creator-profile URL already was.
+
 ## [0.1.1] - 2026-07-27
 
 ### Added

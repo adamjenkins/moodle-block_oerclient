@@ -13,8 +13,12 @@ dedicated page first.
   uploading, published, or failed). Read directly from the local database —
   no network call.
 - **Recent OER available** — a handful of the newest resources published on
-  the connected Exchange, each with its creator's name, fetched via the same
-  search web service `local_oerclient`'s browse page already uses.
+  the connected Exchange, each leading with its cover-image thumbnail (a
+  neutral panel of the same size where a resource has no cover, so rows stay
+  aligned) and carrying its creator's name, fetched via the same search web
+  service `local_oerclient`'s browse page already uses. The thumbnail and
+  creator-profile URLs arrive over the network from the Exchange, so both are
+  passed through `clean_param(..., PARAM_URL)` before being rendered.
 
 If the site isn't yet registered with an Exchange (or the Exchange can't be
 reached), the second panel shows a plain explanatory message instead of an
