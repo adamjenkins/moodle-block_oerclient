@@ -226,8 +226,21 @@ class block_oerclient extends block_base {
                 continue;
             }
             $url = new moodle_url('/local/oerclient/resource_preview.php', ['id' => $rid]);
-            $out .= html_writer::start_tag('li', ['class' => 'mb-2']);
-            $out .= html_writer::link($url, s((string) ($r['title'] ?? '')), ['class' => 'fw-bold']);
+
+            // Thumbnail left, text right. The thumbnail is inside the same
+            // link as the title but hidden from assistive tech, so it is a
+            // bigger click target without becoming a second announced link
+            // to the same place. PARAM_URL rejects javascript:/data: schemes
+            // — this URL came over the network from the Exchange, same
+            // distrust as creatorprofileurl below.
+            $coverurl = clean_param((string) ($r['coverimageurl'] ?? ''), PARAM_URL);
+            $thumb = html_writer::link(
+                $url,
+                \local_oerclient\local\cover_image::listitem($coverurl !== '' ? $coverurl : null),
+                ['tabindex' => '-1', 'aria-hidden' => 'true', 'class' => 'flex-shrink-0']
+            );
+
+            $text = html_writer::link($url, s((string) ($r['title'] ?? '')), ['class' => 'fw-bold']);
             if (!empty($r['creatorname'])) {
                 $creatorlabel = s((string) $r['creatorname']);
                 // PARAM_URL rejects javascript:/data: and other non-web
@@ -238,9 +251,13 @@ class block_oerclient extends block_base {
                     $creatorlabel = html_writer::link($profileurl, $creatorlabel);
                 }
                 $createdby = get_string('createdby', 'block_oerclient', $creatorlabel);
-                $out .= html_writer::tag('div', $createdby, ['class' => 'small text-muted']);
+                $text .= html_writer::tag('div', $createdby, ['class' => 'small text-muted']);
             }
-            $out .= html_writer::tag('div', s((string) ($r['licenseshortname'] ?? '')), ['class' => 'small text-muted']);
+            $text .= html_writer::tag('div', s((string) ($r['licenseshortname'] ?? '')), ['class' => 'small text-muted']);
+
+            $out .= html_writer::start_tag('li', ['class' => 'd-flex gap-2 align-items-start mb-2']);
+            $out .= $thumb;
+            $out .= html_writer::div($text, 'flex-grow-1', ['style' => 'min-width:0;']);
             $out .= html_writer::end_tag('li');
         }
         $out .= html_writer::end_tag('ul');
