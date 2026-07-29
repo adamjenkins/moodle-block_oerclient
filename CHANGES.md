@@ -1,17 +1,13 @@
-# Release notes — 1.0.0
+# Release notes — 1.0.1
 
-The first stable release. The block is declared `MATURITY_STABLE`: both
-panels, the cached Exchange search behind the second one, and the degradation
-paths for an unregistered or unreachable Exchange have been exercised against
-a real two-site deployment.
+No change to the plugin itself. This release exists to fix release
+publication to the camp registry: the previous release workflow pinned
+camp-tools v0.2.25, whose index-entry schema predates the `source-repo-id`
+field the registry added to every claimed entry on 2026-07-28 (OIDC trusted
+publishing), so publication of v1.0.0 could not succeed. The workflow is
+replaced with the registry's current tokenless template (OIDC trusted
+publishing, camp-tools v0.2.35); no access token, fork or repository secret
+is needed any more.
 
-One change lands with it. **The "Recent OER available" panel shows cover
-images**: each row now leads with the resource's cover-image thumbnail, with a
-neutral panel of the same size where a resource has no cover, so rows stay
-aligned. The thumbnail sits inside the same link as the title but is hidden
-from assistive technology, widening the click target without announcing the
-same destination twice.
-
-The thumbnail URL arrives over the network from the Exchange, so it passes
-`clean_param(..., PARAM_URL)` before rendering — the same treatment the
-creator-profile URL already gets.
+The installable plugin code is identical to 1.0.0 apart from the version
+metadata — the workflow file is excluded from the distribution ZIP.
