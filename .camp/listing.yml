@@ -1,0 +1,33 @@
+# camp listing manifest — descriptive content for your plugin's page.
+# Edit freely and commit; camp ingests this file at each tagged release.
+# Schema: https://camp-registry.org/schema/listing.schema.json
+name: "OER Exchange"
+summary: "A Dashboard block for the OER Exchange platform's client-side plugin, giving the Exchange a presence on the Dashboard of a teacher's own Moodle site."
+description: |
+  Install this alongside `local_oerclient` on a teacher's own Moodle site, so
+  that the Exchange is visible on the Dashboard without having to navigate to a
+  dedicated page first. Two panels:
+
+  - **Shared from this site** — the site's own outgoing shares to the Exchange,
+    whether a course or a single activity, each with its status: queued,
+    building a backup, uploading, published, or failed. Read straight from the
+    local database, with no network call.
+  - **Recent OER available** — a handful of the newest resources published on
+    the connected Exchange, each with its creator's name, fetched through the
+    same search web service the browse page already uses.
+
+  If the site is not yet registered with an Exchange, or the Exchange cannot be
+  reached, the second panel shows a plain explanatory message instead of an
+  error.
+
+  `local_oerclient` must already be installed and configured. This block
+  declares it as a hard dependency, so Moodle's plugin installer will refuse to
+  install the block without it.
+labels:
+  - fully-free
+links:
+  docs: https://github.com/adamjenkins/moodle-block_oerclient#readme
+  issues: https://github.com/adamjenkins/moodle-block_oerclient/issues
+# screenshots:
+#   - path: .camp/screenshots/overview.png
+#     caption: Main view
