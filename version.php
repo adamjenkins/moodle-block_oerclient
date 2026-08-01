@@ -25,14 +25,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_oerclient';
-$plugin->version   = 2026080100;
+$plugin->version   = 2026080101;
 // 2025041400 = the Moodle 5.0 branching version — matches $supported's floor
 // and composer.json. The previous value (2024100700) was Moodle 4.5 while
 // its comment claimed 5.0; 4.5 sites could install a block never tested
 // there (and styled with Bootstrap 5 classes 4.5 themes lack).
 $plugin->requires  = 2025041400;
 $plugin->supported = [500, 502];
-$plugin->release   = '1.0.2';
+$plugin->release   = '1.0.3';
 $plugin->maturity  = MATURITY_STABLE;
 
 // Moodle's real enforcement mechanism for "this block needs its parent
@@ -40,4 +40,9 @@ $plugin->maturity  = MATURITY_STABLE;
 // BLOCKS-DESIGN.md "Why not subplugins"), so this dependency declaration is
 // it: the installer refuses to install/upgrade block_oerclient unless
 // local_oerclient is present.
-$plugin->dependencies = ['local_oerclient' => ANY_VERSION];
+// Pinned rather than ANY_VERSION since 1.0.3: the block renders licence codes
+// through \local_oerclient\local\licence_display, which arrived in
+// local_oerclient 1.0.4 (2026080101). With ANY_VERSION the installer would
+// happily pair this block with an older local_oerclient and the block would
+// then fatal with "Class not found" the first time it rendered a resource.
+$plugin->dependencies = ['local_oerclient' => 2026080101];

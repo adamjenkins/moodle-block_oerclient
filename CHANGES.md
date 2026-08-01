@@ -1,15 +1,18 @@
-# Release notes — 1.0.2
+# Release notes — 1.0.3
 
-Resource titles and creator names in this block's "Shared from this site" and
-"Recent on the Exchange" panels previously showed multilang markup as visible
-literal text — `<span lang="en" class="multilang">…</span>` — instead of the
-language the viewer is reading in. The values were HTML-escaped but never
-passed through the site's text filters. They now use `format_string()`, so a
-bilingual title collapses to the reader's language.
+Licence codes in the block's "Shared from this site" and "Recent on the
+Exchange" panels are now displayed the same way as everywhere else on the site.
+Previously the block styled them on its own, so a code could read differently
+here than on the page it linked to.
 
-**Site requirement:** Moodle only runs the multilang filter over short strings
-like titles when that filter is set to apply to *content and headings* rather
-than content alone (Site administration → Plugins → Filters → Manage filters).
+The block now follows the OER Client plugin's **Show licence codes in capitals**
+setting (on by default, so codes read `CC-SA-4.0`). The capitals come from CSS
+rather than from rewriting the text, so text copied from the block matches what
+the Exchange actually holds, and a screen reader reads the code out rather than
+spelling out capital letters.
+
+**Requires OER Client 1.0.4 or later**, which supplies the shared display
+helper and the setting.
 
 No database changes; no action required after upgrading beyond the usual
 `admin/cli/upgrade.php`.

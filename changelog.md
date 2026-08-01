@@ -3,10 +3,14 @@
 All notable changes to this project are documented in this file, in
 [Keep a Changelog](https://keepachangelog.com/) format.
 
-## [Unreleased]
+## [1.0.3] - 2026-08-01
 
 ### Changed
 
+- `$plugin->dependencies` pins `local_oerclient` to 2026080101 (1.0.4) instead
+  of `ANY_VERSION`. The block now calls a class that only exists from that
+  release; with `ANY_VERSION` the installer would pair it with an older
+  local_oerclient and the block would fatal on first render.
 - The licence code in the block's resource lists is rendered through
   `\local_oerclient\local\licence_display` (a declared dependency), which wraps
   it in `<span class="oer-licence-name">` and leaves the capitals to CSS. The
