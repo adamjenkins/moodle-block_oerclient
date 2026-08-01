@@ -16,6 +16,7 @@
 
 use block_oerclient\local\content_builder;
 use local_oerclient\local\exchange_client;
+use local_oerclient\local\licence_display;
 
 /**
  * Dashboard block for the OER Client site: "What I've shared" (this site's
@@ -273,9 +274,16 @@ class block_oerclient extends block_base {
                 $text .= html_writer::tag('div', $createdby, ['class' => 'small text-muted']);
             }
             // Licence shortname is an identifier from the Exchange's accepted
-            // list ('cc-sa-4.0'), not authored display text — s(), never
-            // format_string().
-            $text .= html_writer::tag('div', s((string) ($r['licenseshortname'] ?? '')), ['class' => 'small text-muted']);
+            // list ('cc-sa-4.0'), not authored display text — the helper
+            // s()-escapes it and never format_string()s it, and applies the
+            // capitals (if the local plugin's setting is on) as a CSS class
+            // rather than transforming the text. local_oerclient is a declared
+            // dependency of this block, so the helper is always present.
+            $text .= html_writer::tag(
+                'div',
+                licence_display::html((string) ($r['licenseshortname'] ?? '')),
+                ['class' => 'small text-muted']
+            );
 
             $out .= html_writer::start_tag('li', ['class' => 'd-flex gap-2 align-items-start mb-2']);
             $out .= $thumb;

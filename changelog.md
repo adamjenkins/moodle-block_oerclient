@@ -3,6 +3,17 @@
 All notable changes to this project are documented in this file, in
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [Unreleased]
+
+### Changed
+
+- The licence code in the block's resource lists is rendered through
+  `\local_oerclient\local\licence_display` (a declared dependency), which wraps
+  it in `<span class="oer-licence-name">` and leaves the capitals to CSS. The
+  block follows `local_oerclient`'s **Show licence codes in capitals** setting,
+  so the code matches the rest of the site instead of being styled
+  independently.
+
 ## [1.0.2] - 2026-08-01
 
 ### Fixed
