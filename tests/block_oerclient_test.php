@@ -25,6 +25,12 @@ namespace block_oerclient;
  * this gate exists to avoid sending a non-owner into an access-denied page
  * from a passive Dashboard widget — this test locks that pairing in.
  *
+ * Also covers both panels' text-filtering behaviour: titles and creator
+ * names go through format_string() rather than s(), so a multilang-marked-up
+ * name collapses to the viewer's language instead of rendering as visible
+ * literal `<span lang="en" class="multilang">…` markup, and is escaped
+ * exactly once on the way out.
+ *
  * @package    block_oerclient
  * @copyright  2026 Adam Jenkins <adam@wisecat.net>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -75,6 +81,177 @@ final class block_oerclient_test extends \advanced_testcase {
         return $method->invoke($block);
     }
 
+    /**
+     * Same reflection trick for the "Recent OER available" panel. That panel
+     * normally reaches the Exchange over HTTP, but it reads its cache first
+     * and only calls out on a miss — so seeding the cache lets the real
+     * rendering path run in a unit test with no network at all.
+     *
+     * @param array $results the 'results' list an Exchange search would have returned
+     * @return string
+     */
+    protected function render_recent_panel(array $results): string {
+        set_config('exchangeurl', 'https://exchange.example.com', 'local_oerclient');
+        set_config('sitetoken', 'test-token', 'local_oerclient');
+        \cache::make('block_oerclient', 'recentoer')->set('state', ['failed' => false, 'results' => $results]);
+
+        $block = new \block_oerclient();
+        $method = new \ReflectionMethod($block, 'render_recent_panel');
+        return $method->invoke($block);
+    }
+
+    /**
+     * Enables the exact "content and headings" trio that format_string()
+     * needs before any filter applies to a short string: the filter active
+     * at system context, $CFG->filterall, and the filter listed in
+     * $CFG->stringfilters. Set here rather than read from site config — a
+     * unit test must not depend on how any one deployment happens to be
+     * configured, and whether an admin has enabled multilang is exactly the
+     * kind of setting that differs between the sites this block runs on.
+     */
+    protected function enable_multilang(): void {
+        filter_set_global_state('multilang', TEXTFILTER_ON);
+        set_config('filterall', 1);
+        set_config('stringfilters', 'multilang');
+        \filter_manager::reset_caches();
+    }
+
+    /**
+     * A multilang-marked-up share title used to render as visible literal
+     * `<span lang="en" class="multilang">…` markup, because s() escaped it
+     * before any filter could collapse it. format_string() runs the filters.
+     */
+    public function test_share_title_multilang_collapses_to_the_current_language(): void {
+        $this->resetAfterTest();
+        $this->enable_multilang();
+
+        $owner = $this->getDataGenerator()->create_user();
+        $this->insert_share([
+            'userid' => $owner->id,
+            'title' => '<span lang="en" class="multilang">Chemistry</span>'
+                . '<span lang="ja" class="multilang">化学</span>',
+        ]);
+        $this->setUser($owner);
+
+        $html = $this->render_shares_panel();
+
+        $this->assertStringContainsString('Chemistry', $html);
+        $this->assertStringNotContainsString('化学', $html);
+        // The regression this whole change exists to prevent: literal markup.
+        $this->assertStringNotContainsString('multilang', $html);
+        $this->assertStringNotContainsString('&lt;span', $html);
+    }
+
+    /**
+     * The other span wins for a Japanese viewer — guards against a "fix"
+     * that just hardcodes English.
+     *
+     * Sets $SESSION->forcelang directly rather than calling
+     * force_current_language(), which gates on translation_exists('ja') and
+     * so does nothing on a site with no Japanese language pack installed.
+     * current_language() reads $SESSION->forcelang with no such gate, which
+     * is exactly what ?lang=ja drives at request time.
+     *
+     * forcelang is set AFTER setUser(): setUser() clears it, so setting it
+     * first silently leaves current_language() at 'en' and the assertion
+     * below fails against correct production code. Confirmed by probe
+     * (current_language() reads 'ja' before setUser() and 'en' after).
+     */
+    public function test_share_title_renders_japanese_when_current_language_is_ja(): void {
+        global $SESSION;
+
+        $this->resetAfterTest();
+        $this->enable_multilang();
+
+        $owner = $this->getDataGenerator()->create_user();
+        $this->insert_share([
+            'userid' => $owner->id,
+            'title' => '<span lang="en" class="multilang">Chemistry</span>'
+                . '<span lang="ja" class="multilang">化学</span>',
+        ]);
+        $this->setUser($owner);
+        $SESSION->forcelang = 'ja';
+
+        $html = $this->render_shares_panel();
+
+        $this->assertStringContainsString('化学', $html);
+        $this->assertStringNotContainsString('Chemistry', $html);
+    }
+
+    /**
+     * format_string() escapes on the way out, so the title must NOT be
+     * re-wrapped in s(). An ampersand appearing twice ('&amp;amp;') is the
+     * signature of that double-escape.
+     */
+    public function test_share_title_ampersand_is_escaped_exactly_once(): void {
+        $this->resetAfterTest();
+        $this->enable_multilang();
+
+        $owner = $this->getDataGenerator()->create_user();
+        $this->insert_share(['userid' => $owner->id, 'title' => 'Fish & Chips']);
+        $this->setUser($owner);
+
+        $html = $this->render_shares_panel();
+
+        $this->assertStringContainsString('Fish &amp; Chips', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $html);
+    }
+
+    /**
+     * The "Recent OER available" panel renders titles and creator names that
+     * came over the wire from the Exchange — the same defect, the same fix.
+     */
+    public function test_recent_panel_title_and_creator_collapse_to_one_language(): void {
+        $this->resetAfterTest();
+        $this->enable_multilang();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $html = $this->render_recent_panel([
+            [
+                'id' => 42,
+                'title' => '<span lang="en" class="multilang">Chemistry</span>'
+                    . '<span lang="ja" class="multilang">化学</span>',
+                'creatorname' => '<span lang="en" class="multilang">Ada Lovelace</span>'
+                    . '<span lang="ja" class="multilang">エイダ・ラブレス</span>',
+                // Supplied so cover_image::listitem() takes the plain-URL
+                // branch; the default-thumbnail branch is not what's under
+                // test here.
+                'coverimageurl' => 'https://exchange.example.com/pluginfile.php/1/cover.jpg',
+                'licenseshortname' => 'cc-sa-4.0',
+            ],
+        ]);
+
+        $this->assertStringContainsString('Chemistry', $html);
+        $this->assertStringContainsString('Ada Lovelace', $html);
+        $this->assertStringNotContainsString('化学', $html);
+        $this->assertStringNotContainsString('エイダ・ラブレス', $html);
+        $this->assertStringNotContainsString('multilang', $html);
+        // Licence shortnames are identifiers, not authored text: still s()-ed,
+        // and still shown verbatim.
+        $this->assertStringContainsString('cc-sa-4.0', $html);
+    }
+
+    /**
+     * The recent panel's title sink must not double-escape either.
+     */
+    public function test_recent_panel_title_ampersand_is_escaped_exactly_once(): void {
+        $this->resetAfterTest();
+        $this->enable_multilang();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $html = $this->render_recent_panel([
+            [
+                'id' => 43,
+                'title' => 'Fish & Chips',
+                'coverimageurl' => 'https://exchange.example.com/pluginfile.php/1/cover.jpg',
+                'licenseshortname' => 'cc-sa-4.0',
+            ],
+        ]);
+
+        $this->assertStringContainsString('Fish &amp; Chips', $html);
+        $this->assertStringNotContainsString('&amp;amp;', $html);
+    }
+
     public function test_title_is_linked_for_the_owner(): void {
         $this->resetAfterTest();
 
@@ -118,10 +295,18 @@ final class block_oerclient_test extends \advanced_testcase {
     }
 
     /**
-     * Share titles are other users' free text shown on every Dashboard —
-     * the s() on them is the panel's load-bearing XSS sink.
+     * Share titles are other users' free text shown on every Dashboard, so
+     * the panel's title sink is load-bearing for XSS.
+     *
+     * The sink is format_string() (not s(), which never filtered — see
+     * test_share_title_multilang_collapses_to_the_current_language). This
+     * asserts the security property that holds either way rather than one
+     * particular escaping shape: format_string() removes the script element
+     * outright — via strip_tags() when $CFG->formatstringstriptags is on
+     * (core's default) and via clean_text()/HTMLPurifier when it is off —
+     * so no assertion may depend on seeing '&lt;script&gt;' in the output.
      */
-    public function test_share_titles_are_escaped(): void {
+    public function test_share_titles_cannot_inject_script_markup(): void {
         $this->resetAfterTest();
 
         $owner = $this->getDataGenerator()->create_user();
@@ -130,8 +315,10 @@ final class block_oerclient_test extends \advanced_testcase {
 
         $html = $this->render_shares_panel();
 
-        $this->assertStringNotContainsString('<script>alert(1)</script>', $html);
-        $this->assertStringContainsString('&lt;script&gt;', $html);
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringNotContainsString('</script>', $html);
+        // The harmless remainder of the title still reaches the page.
+        $this->assertStringContainsString('Evil', $html);
     }
 
     /**

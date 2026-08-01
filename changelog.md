@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file, in
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [1.0.2] - 2026-08-01
+
+### Fixed
+
+- Share titles, recent-resource titles and creator names in both block panels
+  are passed through `format_string()` instead of bare `s()`, so multilang
+  markup is filtered rather than rendered as literal `<span>` text.
+
 ## [1.0.1] - 2026-07-29
 
 ### Changed

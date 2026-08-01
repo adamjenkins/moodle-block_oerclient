@@ -125,7 +125,12 @@ class block_oerclient extends block_base {
                 ? format_string($courses[$share->courseid]->fullname, true, ['context' => context_system::instance()])
                 : get_string('unknowncourse', 'block_oerclient');
 
-            $title = s($share->title);
+            // Use format_string(), not s(): a share title is authored display
+            // text and can carry multilang markup, which s() froze into
+            // visible literal <span> markup. format_string() escapes on the
+            // way out, so it must NOT be re-wrapped in s(). System context,
+            // matching the course-name call just above.
+            $title = format_string($share->title, true, ['context' => context_system::instance()]);
             $isowner = (int) $share->userid === (int) $USER->id;
             $canlink = $isowner || $isadmin;
             if ($canlink) {
@@ -240,9 +245,23 @@ class block_oerclient extends block_base {
                 ['tabindex' => '-1', 'aria-hidden' => 'true', 'class' => 'flex-shrink-0']
             );
 
-            $text = html_writer::link($url, s((string) ($r['title'] ?? '')), ['class' => 'fw-bold']);
+            // Titles and creator names go through format_string() so an
+            // Exchange resource marked up for multilang collapses to the
+            // viewer's language instead of showing literal <span> markup.
+            // format_string() escapes internally — never wrap it in s() —
+            // and both values land in link text / element content, which
+            // html_writer does not escape, so no 'escape' => false needed.
+            $text = html_writer::link(
+                $url,
+                format_string((string) ($r['title'] ?? ''), true, ['context' => context_system::instance()]),
+                ['class' => 'fw-bold']
+            );
             if (!empty($r['creatorname'])) {
-                $creatorlabel = s((string) $r['creatorname']);
+                $creatorlabel = format_string(
+                    (string) $r['creatorname'],
+                    true,
+                    ['context' => context_system::instance()]
+                );
                 // PARAM_URL rejects javascript:/data: and other non-web
                 // schemes — html_writer only attribute-escapes, so without
                 // this a malicious Exchange could plant a scriptable href.
@@ -253,6 +272,9 @@ class block_oerclient extends block_base {
                 $createdby = get_string('createdby', 'block_oerclient', $creatorlabel);
                 $text .= html_writer::tag('div', $createdby, ['class' => 'small text-muted']);
             }
+            // Licence shortname is an identifier from the Exchange's accepted
+            // list ('cc-sa-4.0'), not authored display text — s(), never
+            // format_string().
             $text .= html_writer::tag('div', s((string) ($r['licenseshortname'] ?? '')), ['class' => 'small text-muted']);
 
             $out .= html_writer::start_tag('li', ['class' => 'd-flex gap-2 align-items-start mb-2']);

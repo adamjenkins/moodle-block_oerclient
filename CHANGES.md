@@ -1,13 +1,15 @@
-# Release notes — 1.0.1
+# Release notes — 1.0.2
 
-No change to the plugin itself. This release exists to fix release
-publication to the camp registry: the previous release workflow pinned
-camp-tools v0.2.25, whose index-entry schema predates the `source-repo-id`
-field the registry added to every claimed entry on 2026-07-28 (OIDC trusted
-publishing), so publication of v1.0.0 could not succeed. The workflow is
-replaced with the registry's current tokenless template (OIDC trusted
-publishing, camp-tools v0.2.35); no access token, fork or repository secret
-is needed any more.
+Resource titles and creator names in this block's "Shared from this site" and
+"Recent on the Exchange" panels previously showed multilang markup as visible
+literal text — `<span lang="en" class="multilang">…</span>` — instead of the
+language the viewer is reading in. The values were HTML-escaped but never
+passed through the site's text filters. They now use `format_string()`, so a
+bilingual title collapses to the reader's language.
 
-The installable plugin code is identical to 1.0.0 apart from the version
-metadata — the workflow file is excluded from the distribution ZIP.
+**Site requirement:** Moodle only runs the multilang filter over short strings
+like titles when that filter is set to apply to *content and headings* rather
+than content alone (Site administration → Plugins → Filters → Manage filters).
+
+No database changes; no action required after upgrading beyond the usual
+`admin/cli/upgrade.php`.
