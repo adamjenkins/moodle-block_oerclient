@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file, in
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [Unreleased]
+
+### Changed
+
+- Declare Moodle 5.3 support: `$plugin->supported` is now `[500, 503]` and the
+  `composer.json` `moodle/moodle` constraint is `>=5.0 <5.4`.
+
 ## [1.0.3] - 2026-08-01
 
 ### Changed

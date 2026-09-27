@@ -30,7 +30,7 @@ error.
   + site token) — this block declares it as a hard dependency in
   `version.php`, so Moodle's plugin installer will refuse to install this
   block without it.
-- Moodle 5.0–5.2 (`$plugin->supported`).
+- Moodle 5.0–5.3 (`$plugin->supported`).
 
 ## Installation
 

@@ -31,7 +31,7 @@ $plugin->version   = 2026080101;
 // its comment claimed 5.0; 4.5 sites could install a block never tested
 // there (and styled with Bootstrap 5 classes 4.5 themes lack).
 $plugin->requires  = 2025041400;
-$plugin->supported = [500, 502];
+$plugin->supported = [500, 503];
 $plugin->release   = '1.0.3';
 $plugin->maturity  = MATURITY_STABLE;
 
