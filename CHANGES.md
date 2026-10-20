@@ -1,11 +1,9 @@
-# Release notes — 1.0.5
+# Release notes — 1.0.6
 
-- The Japanese language pack (lang/ja) is no longer included: releases ship the English strings
-  only, as the Moodle Plugins directory expects. Japanese is provided through Moodle's language
-  packs.
-- `composer.json` now requires `moodle/moodle` `^5.0` instead of `>=5.0 <5.4`, so Composer no
-  longer excludes newer Moodle 5.x releases.
-- Continuous integration now tests against the Moodle 5.3 stable branch (MOODLE_503_STABLE)
-  instead of Moodle's development branch.
+- The share-status badge is readable: it was white text on light grey (1.49:1 contrast) and now
+  takes its text colour from the theme (`text-bg-secondary`, 14:1 in Boost).
+- A plugin icon now appears beside the plugin on Site administration, Plugins, Plugins overview.
+- The camp listing (`.camp/listing.yml`) now carries screenshots with captions. They are
+  excluded from the plugin ZIP.
 
-No code, database or capability changes. No action is required after upgrading.
+No database or capability changes.

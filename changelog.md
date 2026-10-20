@@ -3,6 +3,21 @@
 All notable changes to this project are documented in this file, in
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [1.0.6] - 2026-10-20
+
+### Added
+
+- A plugin icon now appears beside the plugin on Site administration, Plugins,
+  Plugins overview.
+- The camp listing (`.camp/listing.yml`) now carries screenshots with captions.
+  They are excluded from the plugin ZIP.
+
+### Fixed
+
+- The share-status badge is readable: it was white text on light grey (1.49:1
+  contrast) and now takes its text colour from the theme (`text-bg-secondary`,
+  14:1 in Boost).
+
 ## [1.0.5] - 2026-10-04
 
 ### Changed

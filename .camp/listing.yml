@@ -28,6 +28,6 @@ labels:
 links:
   docs: https://github.com/adamjenkins/moodle-block_oerclient#readme
   issues: https://github.com/adamjenkins/moodle-block_oerclient/issues
-# screenshots:
-#   - path: .camp/screenshots/overview.png
-#     caption: Main view
+screenshots:
+  - path: .camp/screenshots/01-dashboard.png
+    caption: "Your site's shares with their status, and the newest resources on the Exchange."
