@@ -143,7 +143,7 @@ class block_oerclient extends block_base {
 
             $out .= html_writer::start_tag('li', ['class' => 'mb-2']);
             $out .= html_writer::tag('span', $titlehtml, ['class' => 'fw-bold']);
-            $out .= ' ' . html_writer::tag('span', $statuslabel, ['class' => 'badge bg-secondary']);
+            $out .= ' ' . html_writer::tag('span', $statuslabel, ['class' => 'badge text-bg-secondary']);
             // Course name is already output-safe here: either format_string()'s
             // return value or a static get_string() — wrapping it in s()
             // too would double-encode entities in course names.
