@@ -270,7 +270,10 @@ final class block_oerclient_test extends \advanced_testcase {
 
         $owner = $this->getDataGenerator()->create_user();
         $viewer = $this->getDataGenerator()->create_user();
-        $this->insert_share(['userid' => $owner->id, 'title' => 'Owner Share']);
+        // A real, visible course: a non-owner only sees published shares
+        // from courses visible to them.
+        $course = $this->getDataGenerator()->create_course(['summary' => '']);
+        $this->insert_share(['userid' => $owner->id, 'courseid' => $course->id, 'title' => 'Owner Share']);
         $this->setUser($viewer);
 
         $html = $this->render_shares_panel();
@@ -310,7 +313,12 @@ final class block_oerclient_test extends \advanced_testcase {
         $this->resetAfterTest();
 
         $owner = $this->getDataGenerator()->create_user();
-        $this->insert_share(['userid' => $owner->id, 'title' => '<script>alert(1)</script>Evil']);
+        $course = $this->getDataGenerator()->create_course(['summary' => '']);
+        $this->insert_share([
+            'userid' => $owner->id,
+            'courseid' => $course->id,
+            'title' => '<script>alert(1)</script>Evil',
+        ]);
         $this->setUser($this->getDataGenerator()->create_user());
 
         $html = $this->render_shares_panel();
@@ -335,5 +343,88 @@ final class block_oerclient_test extends \advanced_testcase {
         $html = $this->render_shares_panel();
 
         $this->assertStringNotContainsString('<b>odd</b>', $html);
+    }
+
+    /**
+     * Site-wide scope must not show a student other users' unpublished
+     * shares or anything from a hidden course (2026-10-28 audit, F1), while
+     * the owner still sees all of their own.
+     */
+    public function test_student_sees_only_published_shares_from_visible_courses(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+
+        $owner = $generator->create_user();
+        $student = $generator->create_user();
+        $visible = $generator->create_course(['summary' => '', 'fullname' => 'Open course']);
+        $hidden = $generator->create_course(['summary' => '', 'fullname' => 'Secret course', 'visible' => 0]);
+        $generator->enrol_user($student->id, $visible->id, 'student');
+        $generator->enrol_user($student->id, $hidden->id, 'student');
+
+        $this->insert_share(['userid' => $owner->id, 'courseid' => $visible->id, 'title' => 'Published share']);
+        $this->insert_share([
+            'userid' => $owner->id, 'courseid' => $visible->id, 'title' => 'Pending share', 'status' => 'pending',
+        ]);
+        $this->insert_share([
+            'userid' => $owner->id, 'courseid' => $visible->id, 'title' => 'Failed share', 'status' => 'failed',
+        ]);
+        $this->insert_share(['userid' => $owner->id, 'courseid' => $hidden->id, 'title' => 'Hidden course share']);
+
+        $this->setUser($student);
+        $html = $this->render_shares_panel();
+
+        $this->assertStringContainsString('Published share', $html);
+        $this->assertStringNotContainsString('Pending share', $html);
+        $this->assertStringNotContainsString('Failed share', $html);
+        $this->assertStringNotContainsString('Hidden course share', $html);
+        $this->assertStringNotContainsString('Secret course', $html);
+
+        $this->setUser($owner);
+        $html = $this->render_shares_panel();
+
+        foreach (['Published share', 'Pending share', 'Failed share', 'Hidden course share', 'Secret course'] as $text) {
+            $this->assertStringContainsString($text, $html);
+        }
+    }
+
+    /**
+     * A cover image on any host other than the configured Exchange's is
+     * replaced by the default thumbnail (2026-10-28 audit, F2).
+     */
+    public function test_recent_panel_ignores_a_cover_on_a_foreign_host(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $html = $this->render_recent_panel([
+            [
+                'id' => 44,
+                'title' => 'Tracked',
+                'coverimageurl' => 'https://tracker.example.net/pixel.gif',
+                'licenseshortname' => 'cc-sa-4.0',
+            ],
+        ]);
+
+        $this->assertStringNotContainsString('tracker.example.net', $html);
+        $this->assertStringContainsString('oerclient-thumb-default', $html);
+    }
+
+    /**
+     * A cover served by the configured Exchange itself is still used.
+     */
+    public function test_recent_panel_keeps_a_cover_on_the_exchange_host(): void {
+        $this->resetAfterTest();
+        $this->setUser($this->getDataGenerator()->create_user());
+
+        $html = $this->render_recent_panel([
+            [
+                'id' => 45,
+                'title' => 'Own cover',
+                'coverimageurl' => 'https://exchange.example.com/pluginfile.php/1/cover.jpg',
+                'licenseshortname' => 'cc-sa-4.0',
+            ],
+        ]);
+
+        $this->assertStringContainsString('https://exchange.example.com/pluginfile.php/1/cover.jpg', $html);
+        $this->assertStringNotContainsString('oerclient-thumb-default', $html);
     }
 }

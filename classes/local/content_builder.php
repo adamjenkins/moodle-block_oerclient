@@ -53,4 +53,118 @@ class content_builder {
 
         return $DB->get_records('local_oerclient_shares', $conditions, 'timemodified DESC', '*', 0, $limit);
     }
+
+    /**
+     * The most recent shares the viewing user may see, newest first.
+     *
+     * The panel stays site-wide (see DEFAULT_SCOPE_TO_USER), but each row is
+     * filtered by the viewer's access. The share's owner and holders of
+     * moodle/site:config see every row. Anyone else sees a share only when it
+     * is 'published' AND its source course is visible to them in course
+     * listings (core_course_category::can_view_course_info(): a hidden
+     * course needs moodle/course:viewhiddencourses). A share whose course no
+     * longer exists is shown to its owner and admins only. Without this a
+     * student's Dashboard listed other users' pending/failed share titles and
+     * the names of hidden courses (2026-10-28 security audit, F1).
+     *
+     * Rows are over-fetched in batches and trimmed after filtering, so the
+     * panel still fills up to $limit rows when some are filtered out.
+     *
+     * @param int $limit maximum rows to return
+     * @param int $userid the viewing user
+     * @param bool|null $scopetouser overrides self::DEFAULT_SCOPE_TO_USER for this call
+     * @return array<int, \stdClass> local_oerclient_shares rows, keyed by id
+     */
+    public static function get_visible_shares(int $limit, int $userid, ?bool $scopetouser = null): array {
+        global $DB;
+
+        $scopetouser = $scopetouser ?? self::DEFAULT_SCOPE_TO_USER;
+        $conditions = $scopetouser ? ['userid' => $userid] : [];
+        $isadmin = has_capability('moodle/site:config', \context_system::instance(), $userid);
+
+        $visible = [];
+        $batchsize = max($limit * 4, 20);
+        // Bounded: at most this many batches are read, however many rows the
+        // viewer is not allowed to see.
+        $maxbatches = 5;
+        for ($batch = 0; $batch < $maxbatches && count($visible) < $limit; $batch++) {
+            $shares = $DB->get_records(
+                'local_oerclient_shares',
+                $conditions,
+                'timemodified DESC, id DESC',
+                '*',
+                $batch * $batchsize,
+                $batchsize
+            );
+            if (empty($shares)) {
+                break;
+            }
+
+            $courseids = array_unique(array_map(fn($share) => (int) $share->courseid, $shares));
+            $courses = $DB->get_records_list('course', 'id', $courseids, '', 'id, category, visible');
+
+            foreach ($shares as $id => $share) {
+                if (self::can_view_share($share, $courses[$share->courseid] ?? null, $userid, $isadmin)) {
+                    $visible[$id] = $share;
+                    if (count($visible) >= $limit) {
+                        break;
+                    }
+                }
+            }
+
+            if (count($shares) < $batchsize) {
+                break;
+            }
+        }
+
+        return $visible;
+    }
+
+    /**
+     * An Exchange-supplied cover image URL, accepted only when it is served
+     * from the configured Exchange's own host.
+     *
+     * The URL lands in an img src on every viewer's Dashboard, so a cover on
+     * any other host would make each viewer's browser contact that host
+     * (2026-10-28 security audit, F2). Anything else returns null, so the
+     * caller draws the default thumbnail instead.
+     *
+     * @param string $coverurl the cover URL from the Exchange
+     * @param string $exchangeurl the configured local_oerclient exchangeurl
+     * @return string|null the PARAM_URL-cleaned cover URL, or null for the default thumbnail
+     */
+    public static function exchange_cover_url(string $coverurl, string $exchangeurl): ?string {
+        $coverurl = clean_param($coverurl, PARAM_URL);
+        if ($coverurl === '') {
+            return null;
+        }
+        $coverhost = parse_url($coverurl, PHP_URL_HOST);
+        $exchangehost = parse_url($exchangeurl, PHP_URL_HOST);
+        if (!is_string($coverhost) || !is_string($exchangehost) || $exchangehost === '') {
+            return null;
+        }
+        if (\core_text::strtolower($coverhost) !== \core_text::strtolower($exchangehost)) {
+            return null;
+        }
+        return $coverurl;
+    }
+
+    /**
+     * Whether one share row may be shown to the viewing user.
+     *
+     * @param \stdClass $share local_oerclient_shares row
+     * @param \stdClass|null $course the share's course (id, category, visible), null if it no longer exists
+     * @param int $userid the viewing user
+     * @param bool $isadmin whether the viewer holds moodle/site:config
+     * @return bool
+     */
+    protected static function can_view_share(\stdClass $share, ?\stdClass $course, int $userid, bool $isadmin): bool {
+        if ($isadmin || (int) $share->userid === $userid) {
+            return true;
+        }
+        if ($share->status !== 'published' || $course === null) {
+            return false;
+        }
+        return \core_course_category::can_view_course_info($course, $userid);
+    }
 }

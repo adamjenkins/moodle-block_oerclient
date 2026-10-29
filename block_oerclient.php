@@ -102,11 +102,11 @@ class block_oerclient extends block_base {
     protected function render_shares_panel(): string {
         global $DB, $USER;
 
-        // The userid is ignored while the site-wide default scope is in
-        // force, but passing it makes content_builder's documented
-        // "flip one constant" toggle actually work — without it the
-        // per-user branch could never match.
-        $shares = content_builder::get_recent_shares(self::SHARES_LIMIT, (int) $USER->id);
+        // Site-wide scope, filtered by what this viewer may see: their own
+        // shares, plus other users' published shares from courses visible to
+        // them (every row for moodle/site:config). The userid also makes
+        // content_builder's documented "flip one constant" toggle work.
+        $shares = content_builder::get_visible_shares(self::SHARES_LIMIT, (int) $USER->id);
 
         // The block title is an h5 in Boost, so panels nest below it.
         $out = html_writer::tag('h6', get_string('sharespaneltitle', 'block_oerclient'));
@@ -236,13 +236,16 @@ class block_oerclient extends block_base {
             // Thumbnail left, text right. The thumbnail is inside the same
             // link as the title but hidden from assistive tech, so it is a
             // bigger click target without becoming a second announced link
-            // to the same place. PARAM_URL rejects javascript:/data: schemes
-            // — this URL came over the network from the Exchange, same
-            // distrust as creatorprofileurl below.
-            $coverurl = clean_param((string) ($r['coverimageurl'] ?? ''), PARAM_URL);
+            // to the same place. This URL came over the network from the
+            // Exchange, same distrust as creatorprofileurl below: it is
+            // PARAM_URL-cleaned (no javascript:/data:) and accepted only on
+            // the configured Exchange's own host, so a cover can't make every
+            // viewer's browser call out to a third party. Anything else gets
+            // the default thumbnail.
+            $coverurl = content_builder::exchange_cover_url((string) ($r['coverimageurl'] ?? ''), (string) $exchangeurl);
             $thumb = html_writer::link(
                 $url,
-                \local_oerclient\local\cover_image::listitem($coverurl !== '' ? $coverurl : null),
+                \local_oerclient\local\cover_image::listitem($coverurl),
                 ['tabindex' => '-1', 'aria-hidden' => 'true', 'class' => 'flex-shrink-0']
             );
 

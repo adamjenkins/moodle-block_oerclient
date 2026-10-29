@@ -134,4 +134,138 @@ final class content_builder_test extends \advanced_testcase {
         $this->assertCount(1, $shares);
         $this->assertSame((int) $user1->id, (int) $shares[0]->userid);
     }
+
+    /**
+     * A student sees no other user's unpublished share and no share from a
+     * hidden course; the owner still sees all of their own (audit F1).
+     */
+    public function test_visible_shares_are_filtered_by_the_viewers_access(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+
+        $owner = $generator->create_user();
+        $student = $generator->create_user();
+        $visible = $generator->create_course(['summary' => '']);
+        $hidden = $generator->create_course(['summary' => '', 'visible' => 0]);
+        $generator->enrol_user($student->id, $visible->id, 'student');
+        $generator->enrol_user($student->id, $hidden->id, 'student');
+
+        $published = $this->insert_share(['userid' => $owner->id, 'courseid' => $visible->id, 'timemodified' => 100]);
+        $pending = $this->insert_share([
+            'userid' => $owner->id, 'courseid' => $visible->id, 'status' => 'pending', 'timemodified' => 200,
+        ]);
+        $failed = $this->insert_share([
+            'userid' => $owner->id, 'courseid' => $visible->id, 'status' => 'failed', 'timemodified' => 300,
+        ]);
+        $inhidden = $this->insert_share(['userid' => $owner->id, 'courseid' => $hidden->id, 'timemodified' => 400]);
+        $ownpending = $this->insert_share([
+            'userid' => $student->id, 'courseid' => $visible->id, 'status' => 'pending', 'timemodified' => 500,
+        ]);
+
+        $this->assertSame(
+            [$ownpending, $published],
+            array_map('intval', array_keys(content_builder::get_visible_shares(8, (int) $student->id)))
+        );
+        // moodle/site:config sees every row.
+        $this->assertSame(
+            [$ownpending, $inhidden, $failed, $pending, $published],
+            array_map('intval', array_keys(content_builder::get_visible_shares(8, (int) get_admin()->id)))
+        );
+        $this->assertSame(
+            [$inhidden, $failed, $pending, $published],
+            array_map('intval', array_keys(content_builder::get_visible_shares(8, (int) $owner->id)))
+        );
+    }
+
+    /**
+     * A teacher who can see the hidden course (moodle/course:viewhiddencourses)
+     * sees its published shares; a share whose course was deleted is never
+     * shown to a non-owner.
+     */
+    public function test_visible_shares_hidden_course_needs_viewhiddencourses(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+
+        $owner = $generator->create_user();
+        $teacher = $generator->create_user();
+        $hidden = $generator->create_course(['summary' => '', 'visible' => 0]);
+        $generator->enrol_user($teacher->id, $hidden->id, 'editingteacher');
+
+        $inhidden = $this->insert_share(['userid' => $owner->id, 'courseid' => $hidden->id, 'timemodified' => 100]);
+        $this->insert_share(['userid' => $owner->id, 'courseid' => 999999, 'timemodified' => 200]);
+
+        $this->assertSame(
+            [$inhidden],
+            array_map('intval', array_keys(content_builder::get_visible_shares(8, (int) $teacher->id)))
+        );
+    }
+
+    /**
+     * Filtered-out rows don't shrink the panel: newer rows the viewer can't
+     * see are skipped and older visible rows fill it up to the limit, across
+     * more than one over-fetch batch.
+     */
+    public function test_visible_shares_still_fill_the_limit(): void {
+        $this->resetAfterTest();
+        $generator = $this->getDataGenerator();
+
+        $owner = $generator->create_user();
+        $student = $generator->create_user();
+        $course = $generator->create_course(['summary' => '']);
+        $generator->enrol_user($student->id, $course->id, 'student');
+
+        $expected = [];
+        for ($i = 0; $i < 10; $i++) {
+            $expected[] = $this->insert_share(['userid' => $owner->id, 'courseid' => $course->id, 'timemodified' => 100 + $i]);
+        }
+        // 40 newer pending shares: more than the first batch (8 * 4 = 32).
+        for ($i = 0; $i < 40; $i++) {
+            $this->insert_share([
+                'userid' => $owner->id, 'courseid' => $course->id, 'status' => 'pending', 'timemodified' => 1000 + $i,
+            ]);
+        }
+
+        $shares = content_builder::get_visible_shares(8, (int) $student->id);
+
+        $this->assertSame(
+            array_slice(array_reverse($expected), 0, 8),
+            array_map('intval', array_keys($shares))
+        );
+    }
+
+    /**
+     * Cover URLs are accepted only on the configured Exchange's host (audit F2).
+     *
+     * @param string $coverurl
+     * @param string|null $expected
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('exchange_cover_url_provider')]
+    public function test_exchange_cover_url(string $coverurl, ?string $expected): void {
+        $this->assertSame($expected, content_builder::exchange_cover_url($coverurl, 'https://exchange.example.com/'));
+    }
+
+    /**
+     * Cases for test_exchange_cover_url().
+     *
+     * @return array
+     */
+    public static function exchange_cover_url_provider(): array {
+        $own = 'https://exchange.example.com/pluginfile.php/1/cover.jpg';
+        return [
+            'same host' => [$own, $own],
+            'same host, other case' => ['https://Exchange.Example.com/c.jpg', 'https://Exchange.Example.com/c.jpg'],
+            'foreign host' => ['https://tracker.example.net/pixel.gif', null],
+            'lookalike suffix host' => ['https://exchange.example.com.evil.test/c.jpg', null],
+            'subdomain' => ['https://cdn.exchange.example.com/c.jpg', null],
+            'empty' => ['', null],
+            'javascript scheme' => ['javascript:alert(1)', null],
+        ];
+    }
+
+    /**
+     * With no usable exchangeurl, no remote cover is accepted at all.
+     */
+    public function test_exchange_cover_url_without_an_exchange_host(): void {
+        $this->assertNull(content_builder::exchange_cover_url('https://exchange.example.com/c.jpg', ''));
+    }
 }
