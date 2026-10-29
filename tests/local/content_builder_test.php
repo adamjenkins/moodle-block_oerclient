@@ -166,7 +166,7 @@ final class content_builder_test extends \advanced_testcase {
             [$ownpending, $published],
             array_map('intval', array_keys(content_builder::get_visible_shares(8, (int) $student->id)))
         );
-        // moodle/site:config sees every row.
+        // A holder of moodle/site:config sees every row.
         $this->assertSame(
             [$ownpending, $inhidden, $failed, $pending, $published],
             array_map('intval', array_keys(content_builder::get_visible_shares(8, (int) get_admin()->id)))
