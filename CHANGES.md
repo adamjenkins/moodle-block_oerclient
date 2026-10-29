@@ -1,9 +1,14 @@
-# Release notes — 1.0.6
+# Release notes — 1.0.7
 
-- The share-status badge is readable: it was white text on light grey (1.49:1 contrast) and now
-  takes its text colour from the theme (`text-bg-secondary`, 14:1 in Boost).
-- A plugin icon now appears beside the plugin on Site administration, Plugins, Plugins overview.
-- The camp listing (`.camp/listing.yml`) now carries screenshots with captions. They are
-  excluded from the plugin ZIP.
+Security release.
+
+- The "Shared from this site" panel still lists shares from the whole site, but now filters them
+  for each viewer. Someone who neither made a share nor administers the site sees it only when it
+  is published and its course is one they may see listed, so the panel no longer shows pending or
+  failed shares, or hidden courses' names, to students.
+- Cover images in the recent-resources panel are shown only when they come from the configured
+  Exchange; any other address falls back to the default thumbnail.
+- CI now also tests Moodle 5.1 (`MOODLE_501_STABLE`), which the plugin has always declared
+  supported.
 
 No database or capability changes.

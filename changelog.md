@@ -3,6 +3,19 @@
 All notable changes to this project are documented in this file, in
 [Keep a Changelog](https://keepachangelog.com/) format.
 
+## [1.0.7] - 2026-10-29
+
+### Security
+
+- The "Shared from this site" panel shows a non-owner without moodle/site:config
+  only published shares from courses they may see listed.
+- Recent-resource cover images load only from the configured Exchange's host.
+
+### Changed
+
+- CI now also tests Moodle 5.1 (`MOODLE_501_STABLE`), which the plugin has
+  always declared supported.
+
 ## [1.0.6] - 2026-10-20
 
 ### Added
